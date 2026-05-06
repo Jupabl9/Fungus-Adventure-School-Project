@@ -1,0 +1,131 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Press+Start+2P&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-pixel: "Press Start 2P", system-ui;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-forest-dark: #1a2e1a;
+  --color-water-green: #4ADE80;
+  --color-water-blue: #3B82F6;
+  --color-pixel-white: #f0f0f0;
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-black text-pixel-white overflow-hidden;
+    font-family: var(--font-pixel);
+    image-rendering: pixelated;
+    touch-action: none; /* Prevent scrolling and zooming for better mobile control */
+  }
+}
+
+@layer utilities {
+  .pixel-border {
+    box-shadow: 
+      0 -2px 0 0 #000,
+      0 2px 0 0 #000,
+      -2px 0 0 0 #000,
+      2px 0 0 0 #000;
+  }
+  
+  .retro-shadow {
+    box-shadow: 0 4px 0 0 rgba(0,0,0,0.5);
+  }
+}
+
+/* Mobile-only game layout */
+.mobile-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100%;
+  margin: 0 auto;
+  background: #000;
+}
+
+.game-container {
+  flex: 1;
+  width: 100%;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Retro Console Effects */
+.crt-overlay {
+  pointer-events: none;
+  background: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), 
+    radial-gradient(circle, rgba(18, 16, 16, 0) 60%, rgba(0, 0, 0, 0.4) 100%);
+  background-size: 100% 4px, 100% 100%;
+  z-index: 1000;
+}
+
+.game-wrapper {
+  background: #000;
+}
+
+.controls-container {
+  height: 240px;
+  width: 100%;
+  background: #222;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 1rem;
+  border-top: 4px solid #444;
+  position: relative;
+}
+
+.control-btn {
+  width: 70px;
+  height: 70px;
+  background: #444;
+  border: 4px solid #1a1a1a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  active:bg-emerald-500;
+  active:scale-95;
+}
+
+.shoot-btn {
+  background: #e70000;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+}
+
+.jump-btn {
+    background: #4ADE80;
+    color: black;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+}
+
+.pixel-text {
+  text-shadow: 2px 2px 0px #000;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+/* Credits animation */
+@keyframes scrollUp {
+  0% { transform: translateY(100vh); }
+  100% { transform: translateY(-100%); }
+}
+
+.credits-scroll {
+  animation: scrollUp 20s linear forwards;
+}

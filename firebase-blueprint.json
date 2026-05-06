@@ -1,0 +1,24 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Information about the player, including scores and personal details.",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string", "description": "Full name of the user" },
+        "grade": { "type": "string", "description": "The educational grade/class of the user" },
+        "email": { "type": "string", "description": "User email address, used as document ID" },
+        "score_historia": { "type": "number", "description": "High score for the Story mode (one-time save)" },
+        "score_infinito": { "type": "number", "description": "Cumulative score for the Infinite mode" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of account creation" }
+      },
+      "required": ["fullName", "grade", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{email}": {
+      "schema": "User",
+      "description": "Collection of user documents, keyed by email."
+    }
+  }
+}

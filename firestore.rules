@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return true; // Simplified for manual email entry
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128;
+    }
+
+    function isOwner(email) {
+      return true; // Users identify by email string directly in this simplified version
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.email is string && data.email.size() <= 100 &&
+             data.fullName is string && data.fullName.size() <= 100 &&
+             data.grade is string && data.grade.size() <= 20 &&
+             data.score_infinito_v2 is number &&
+             data.score_historia_v2 is number &&
+             data.createdAt is timestamp;
+    }
+
+    match /users/{email} {
+      // Allow read for leaderboard
+      allow get, list: if true;
+
+      // Registration: Create user document
+      allow create: if isOwner(email) && 
+                      email == incoming().email &&
+                      isValidUser(incoming()) &&
+                      incoming().score_infinito_v2 == 0 &&
+                      incoming().keys().size() == 6 && // email, fullName, grade, score_historia_v2, score_infinito_v2, createdAt
+                      incoming().createdAt == request.time;
+
+      // Score updates
+      allow update: if isOwner(email) &&
+                      incoming().email == existing().email &&
+                      incoming().fullName == existing().fullName &&
+                      incoming().grade == existing().grade &&
+                      incoming().createdAt == existing().createdAt && (
+                        // Increment Infinite score
+                        (incoming().score_infinito_v2 > existing().score_infinito_v2 && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_infinito_v2'])) ||
+                        
+                        // Set Story score (one-time if 0 or undefined)
+                        ((existing().score_historia_v2 == 0 || !existing().keys().hasAny(['score_historia_v2'])) && 
+                         incoming().score_historia_v2 is number &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v2'])) ||
+
+                        // Both
+                        ((existing().score_historia_v2 == 0 || !existing().keys().hasAny(['score_historia_v2'])) &&
+                         incoming().score_historia_v2 is number &&
+                         incoming().score_infinito_v2 > existing().score_infinito_v2 &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v2', 'score_infinito_v2']))
+                      );
+    }
+  }
+}
