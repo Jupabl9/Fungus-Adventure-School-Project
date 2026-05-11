@@ -8,7 +8,9 @@ service cloud.firestore {
 
     // Helper functions
     function isSignedIn() {
-      return true; // Simplified for manual email entry
+      // User identifies by email string directly as requested.
+      // We keep this helper but return true for the "email-as-password" flow.
+      return true;
     }
     
     function isValidId(id) {
@@ -16,7 +18,8 @@ service cloud.firestore {
     }
 
     function isOwner(email) {
-      return true; // Users identify by email string directly in this simplified version
+      // In this app, knowing the email is the "password"
+      return true;
     }
 
     function incoming() {
@@ -31,8 +34,9 @@ service cloud.firestore {
       return data.email is string && data.email.size() <= 100 &&
              data.fullName is string && data.fullName.size() <= 100 &&
              data.grade is string && data.grade.size() <= 20 &&
-             data.score_infinito_v2 is number &&
-             data.score_historia_v2 is number &&
+             data.score_infinito_v3 is number &&
+              data.score_historia_v3 is number &&
+             (data.get('score_quiz_v6', null) == null || data.score_quiz_v6 is number) &&
              data.createdAt is timestamp;
     }
 
@@ -41,33 +45,38 @@ service cloud.firestore {
       allow get, list: if true;
 
       // Registration: Create user document
-      allow create: if isOwner(email) && 
-                      email == incoming().email &&
+      allow create: if email == incoming().email &&
                       isValidUser(incoming()) &&
-                      incoming().score_infinito_v2 == 0 &&
-                      incoming().keys().size() == 6 && // email, fullName, grade, score_historia_v2, score_infinito_v2, createdAt
+                      incoming().score_infinito_v3 == 0 &&
                       incoming().createdAt == request.time;
 
       // Score updates
-      allow update: if isOwner(email) &&
-                      incoming().email == existing().email &&
+      allow update: if incoming().email == existing().email &&
                       incoming().fullName == existing().fullName &&
                       incoming().grade == existing().grade &&
                       incoming().createdAt == existing().createdAt && (
                         // Increment Infinite score
-                        (incoming().score_infinito_v2 > existing().score_infinito_v2 && 
-                         incoming().diff(existing()).affectedKeys().hasOnly(['score_infinito_v2'])) ||
+                        (incoming().score_infinito_v3 > existing().score_infinito_v3 && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_infinito_v3'])) ||
                         
                         // Set Story score (one-time if 0 or undefined)
-                        ((existing().score_historia_v2 == 0 || !existing().keys().hasAny(['score_historia_v2'])) && 
-                         incoming().score_historia_v2 is number &&
-                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v2'])) ||
+                        ((existing().score_historia_v3 == 0 || !existing().keys().hasAny(['score_historia_v3'])) && 
+                         incoming().score_historia_v3 is number &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v3'])) ||
 
-                        // Both
-                        ((existing().score_historia_v2 == 0 || !existing().keys().hasAny(['score_historia_v2'])) &&
-                         incoming().score_historia_v2 is number &&
-                         incoming().score_infinito_v2 > existing().score_infinito_v2 &&
-                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v2', 'score_infinito_v2']))
+                        // Set Quiz score (one-time if not present)
+                        (!existing().keys().hasAny(['score_quiz_v6']) && 
+                         incoming().score_quiz_v6 is number &&
+                         incoming().quiz_history_v6 is list &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_quiz_v6', 'quiz_history_v6'])) ||
+
+                        // Both (Story + Quiz finish)
+                        ((existing().score_historia_v3 == 0 || !existing().keys().hasAny(['score_historia_v3'])) &&
+                         incoming().score_historia_v3 is number &&
+                         !existing().keys().hasAny(['score_quiz_v6']) &&
+                         incoming().score_quiz_v6 is number &&
+                         incoming().quiz_history_v6 is list &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['score_historia_v3', 'score_quiz_v6', 'quiz_history_v6']))
                       );
     }
   }
